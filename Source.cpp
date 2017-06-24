@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 {
 	namedWindow("Interfejs", 1);
 	//string path = string(PROJECT_SOURCE_DIR) + "/data/wm_lab_3/2.webm";
-	VideoCapture capture("yellow_ni.mp4");
+	VideoCapture capture("yellow.mp4");
 
 	// Obecna klatka
 	Mat frame;
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 	Mat img_little_cnt;
 	int old_dice_count=0;
 	int old_dots_count=0;
-	int *old_dots_number = new int[5];
+	vector<int>old_dots_number(5);
 	int same_frame_count=0;
 
 	// Petla do odczytu filmu
@@ -57,21 +57,27 @@ int main(int argc, char** argv)
 		findContours(img_cnt, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 
 		int cnt_number = 0;
-		
-		int *cnt_ind = new int[contours.size()];
-		int *cnt_length = new int[contours.size()];
-		Moments *cnt_mom = new Moments[contours.size()];
-		int *cnt_cent_x = new int[contours.size()];
-		int *cnt_cent_y = new int[contours.size()];
-		for (int i = 0; i < contours.size(); i++) {
-			if (contourArea(contours.at(i)) > 120) {
-				cnt_mom[cnt_number] = moments(contours.at(i), true);
-				//cnt_length[cnt_number] = arcLength(contours.at(i));
-				cnt_cent_x[cnt_number] = (cnt_mom[cnt_number].m10 / cnt_mom[cnt_number].m00);
-				cnt_cent_y[cnt_number] = (cnt_mom[cnt_number].m01 / cnt_mom[cnt_number].m00);
-				cnt_ind[cnt_number] = i;
-				drawContours(img_col, contours, i, Scalar(255, 0, 0), CV_FILLED); //-1 rysuje wszystkie kontury, Scalar-> na niebiesko
-				cnt_number++;
+		int cont_size;
+		if (contours.empty()) cont_size = 100;
+		else cont_size = contours.size();
+
+		vector <int>cnt_ind(cont_size);
+			//int *cnt_ind = new int[cont_size];
+			vector<int>cnt_length(cont_size);
+			vector<Moments> cnt_mom(cont_size);
+			vector<int>cnt_cent_x(cont_size);
+			vector<int>cnt_cent_y(cont_size);
+			if (!contours.empty()) {
+			for (int i = 0; i < contours.size(); i++) {
+				if (contourArea(contours.at(i)) > 120) {
+					cnt_mom[cnt_number] = moments(contours.at(i), true);
+					//cnt_length[cnt_number] = arcLength(contours.at(i));
+					cnt_cent_x[cnt_number] = (cnt_mom[cnt_number].m10 / cnt_mom[cnt_number].m00);
+					cnt_cent_y[cnt_number] = (cnt_mom[cnt_number].m01 / cnt_mom[cnt_number].m00);
+					cnt_ind[cnt_number] = i;
+					drawContours(img_col, contours, i, Scalar(255, 0, 0), CV_FILLED); //-1 rysuje wszystkie kontury, Scalar-> na niebiesko
+					cnt_number++;
+				}
 			}
 		}
 		floodFill(img_little_cnt, Point(0, 0), 0);
@@ -79,26 +85,30 @@ int main(int argc, char** argv)
 		vector<vector<Point> >all_dots;
 
 		findContours(img_little_cnt, all_dots, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-		int *dots_number = new int[all_dots.size()];
+		vector<int>dots_number(5);
 		int dots_total = 0;
 
 		if (cnt_number == 5) {
 			//std::cout << "rzucono 5 kosci" << std::endl;
 			for (int j = 0; j < cnt_number; j++) {
 				dots_number[j] = 0;
-				vector<vector<Point> >dots;
+				vector<vector<Point > >dots;
 				Rect roi = boundingRect(contours.at(cnt_ind[j]));
 				Mat tmp = img_little_cnt.clone();
 
 				findContours(tmp(roi), dots, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-				for (int i = 0; i < dots.size(); i++) {
+				if (!dots.empty())
+				{
+					for (int i = 0; i < dots.size(); i++) {
 
-					if (contourArea(dots.at(i)) > 5 && contourArea(dots.at(i)) < contourArea(contours.at(cnt_ind[j])) / 20) {
-						drawContours(img_col(roi), dots, i, Scalar(255, 0, 255), CV_FILLED);
-						dots_number[j]++;
-						dots_total++;
+						if (contourArea(dots.at(i)) > 5 && contourArea(dots.at(i)) < contourArea(contours.at(cnt_ind[j])) / 20) {
+							drawContours(img_col(roi), dots, i, Scalar(255, 0, 255), CV_FILLED);
+							dots_number[j]++;
+							dots_total++;
+						}
 					}
 				}
+				
 
 				//std::cout << dots_number[j] << std::endl;
 			}
@@ -152,12 +162,9 @@ int main(int argc, char** argv)
 		old_dice_count = cnt_number;
 		old_dots_count = dots_total;
 		old_dots_number = dots_number;
-		delete[](cnt_ind);
-		delete[](cnt_length);
-		delete[](cnt_mom);
-		delete[](cnt_cent_x);
-		delete[](cnt_cent_y);
-		delete[](dots_number);
+		//delete[](cnt_ind);
+
+		//delete[](dots_number);
 
 		char c = waitKey(100);
 
@@ -265,13 +272,7 @@ int main(int argc, char** argv)
 	destroyAllWindows();
 	// Return
 	*/
-try {
-	delete[](old_dots_number);
-}
-catch (cv::Exception& e) {
-	const char* err_msg = e.what();
-	std::cout << "exception caught: " << err_msg << std::endl;
-	}
+
 	
 	return 0;
 }
